@@ -1,0 +1,4 @@
+WARNING: A terminally deprecated method in java.lang.System has been called
+WARNING: System::setSecurityManager has been called by sbt.TrapExit$ (file:/C:/Users/20518/.sbt/boot/scala-2.12.10/org.scala-sbt/sbt/1.3.6/run_2.12-1.3.6.jar)
+WARNING: Please consider reporting this to the maintainers of sbt.TrapExit$
+WARNING: System::setSecurityManager will be removed in a future release

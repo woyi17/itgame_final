@@ -1,0 +1,4 @@
+[error] D:\itgame\IT-game-main\IT-game-main\project\BlockingInteractionMode.scala:4:8: object creation impossible, since method doWithoutEcho in trait PlayInteractionMode of type (f: => Unit)Unit is not defined
+[error] object BlockingInteractionMode extends PlayInteractionMode {
+[error]        ^
+[error] one error found

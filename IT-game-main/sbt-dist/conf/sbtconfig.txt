@@ -1,0 +1,32 @@
+# Set the java args to high
+
+-Xmx2G
+
+-XX:ReservedCodeCacheSize=128m
+
+# Fix for Guice CGLIB and Play Assets incompatibility with Java 9+ module system
+--add-opens
+java.base/java.lang=ALL-UNNAMED
+--add-opens
+java.base/java.lang.reflect=ALL-UNNAMED
+--add-opens
+java.base/java.io=ALL-UNNAMED
+--add-exports
+java.base/sun.net.www.protocol.file=ALL-UNNAMED
+--add-exports
+java.base/sun.net.www.protocol.ftp=ALL-UNNAMED
+--add-exports
+java.base/sun.net.www.protocol.http=ALL-UNNAMED
+--add-exports
+java.base/sun.net.www.protocol.https=ALL-UNNAMED
+--add-exports
+java.base/sun.net.www.protocol.jar=ALL-UNNAMED
+
+
+
+# Set the extra SBT options
+
+-Dsbt.log.format=false
+
+-Dlog4j2.disable.jmx=true
+

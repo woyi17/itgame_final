@@ -1,0 +1,239 @@
+@(request: play.mvc.Http.Request, user: String)
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>ITSD Card Game Main Screen</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            #game-over-overlay {
+                display: none;
+                position: fixed;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                background: rgba(0, 0, 0, 0.75);
+                z-index: 9999;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+            }
+            #game-over-overlay.show {
+                display: flex;
+            }
+            #game-over-box {
+                background: #1a1a2e;
+                border: 3px solid #e94560;
+                border-radius: 16px;
+                padding: 60px 80px;
+                text-align: center;
+                box-shadow: 0 0 40px rgba(233,69,96,0.6);
+            }
+            #game-over-title {
+                font-size: 64px;
+                font-weight: bold;
+                letter-spacing: 4px;
+                margin-bottom: 16px;
+            }
+            #game-over-title.win  { color: #ffd700; text-shadow: 0 0 20px #ffd700; }
+            #game-over-title.lose { color: #e94560; text-shadow: 0 0 20px #e94560; }
+            #game-over-sub {
+                font-size: 24px;
+                color: #ccc;
+                margin-bottom: 40px;
+                font-family: Monaco, monospace;
+            }
+            #game-over-btn {
+                font-size: 18px;
+                padding: 14px 40px;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                background: #e94560;
+                color: #fff;
+                font-family: Monaco, monospace;
+                letter-spacing: 2px;
+                transition: background 0.2s;
+            }
+            #game-over-btn:hover { background: #c73652; }
+        </style>
+        <link rel="stylesheet" href="@routes.Assets.at("css/uikit.css")" />
+        
+        <script src="@routes.Assets.at("js/jquery.3.4.1.js")"></script> 
+        <script src="@routes.Assets.at("js/uikit.js")"></script>
+        <script src="@routes.Assets.at("js/uikit-icons.js")"></script>
+		<script src="@routes.Assets.at("js/hexi.min.js")"></script>
+
+    </head>
+    <body id="mainBody" wsdata="@routes.GameScreenController.socket.webSocketURL(request)" onload="init()">
+
+    <div id="game-over-overlay">
+        <div id="game-over-box">
+            <div id="game-over-title"></div>
+            <div id="game-over-sub"></div>
+            <button id="game-over-btn" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+
+	
+
+	<script src="@routes.Assets.at("js/cardgame.js")"></script>
+	<script type="text/javascript">
+	
+	// // Load them google fonts before starting...!
+	window.WebFontConfig = {
+    	google: {
+        	families: ['Roboto']
+    	},
+
+   		active: function() {
+        	// do something
+        	init();
+   		}
+	};
+	
+	let stageWidth = 1920;
+	let stageHeight = 1080;
+	let moveVelocity = 2;
+	
+	var ws;
+	var userDataSession;
+	var g;
+	var gameActorInitalized = false;
+	var gameStart = false;
+	var sinceLastHeartbeat = 0;
+	
+	// game objects
+	let boardTiles = new Map()
+	let spriteContainers = new Map()
+	let sprites = new Map()
+	let attackLabels = new Map()
+	let healthLabels = new Map()
+	let handContainers = [null,null,null,null,null,null]
+	let handSprites = [null,null,null,null,null,null];
+	let cardJSON = [null,null,null,null,null,null];
+	let cardPreview = null;
+	let prevewCountdown = 0;
+	
+	let activeMoves = new Map()
+	let activeProjectiles = [];
+	let drawUnitQueue = [];
+	let drawTileQueue = [];
+	
+	let player1ManaIcons = new Map()
+	let player2ManaIcons = new Map()
+	
+	let player1Health = null;
+	let player2Health = null;
+	
+	let player1Notification = null;
+	let player2Notification = null;
+	let player1NotificationText = null;
+	let player2NotificationText = null;
+	
+	let playingEffects = [];
+	
+	function init() {
+		openWebSocketConnection();
+	}
+
+	function showGameOverScreen(winner) {
+		var overlay = document.getElementById('game-over-overlay');
+		var title   = document.getElementById('game-over-title');
+		var sub     = document.getElementById('game-over-sub');
+		if (winner === 'player') {
+			title.textContent = 'YOU WIN!';
+			title.className   = 'win';
+			sub.textContent   = 'Congratulations! You defeated the AI.';
+		} else {
+			title.textContent = 'YOU LOSE';
+			title.className   = 'lose';
+			sub.textContent   = 'The AI wins this time. Better luck next game!';
+		}
+		overlay.classList.add('show');
+	}
+	
+	
+	function openWebSocketConnection() {
+        var wsURL = document.getElementById("mainBody").getAttribute("wsdata");
+
+        //alert(wsURL);
+        ws = new WebSocket(wsURL);
+        ws.onmessage = function (event) {
+            var message;
+            message = JSON.parse(event.data);
+			console.log(message);
+            switch (message.messagetype) {
+                case "actorReady":
+					initHexi(message.preloadImages);
+
+					gameActorInitalized = true;
+					break;
+				case "drawTile":
+					//console.log(message);
+					drawTileQueue.push(message);
+					break;
+				case "drawUnit":
+					drawUnitQueue.push(message);
+					break;
+				case "moveUnit":
+				    moveUnit(message.unitID,message.tilex,message.tiley);
+                    break;
+				case "moveUnitToTile":
+					moveUnitToTile(message);
+					break;
+				case "setUnitHealth":
+					setUnitHealth(message);
+					break;
+				case "setUnitAttack":
+					setUnitAttack(message);
+					break;
+				case "setPlayer1Health":
+					setPlayer1Health(message);
+					break;
+				case "setPlayer2Health":
+					setPlayer2Health(message);
+					break;
+				case "setPlayer1Mana":
+					setPlayer1Mana(message);
+					break;
+				case "setPlayer2Mana":
+					setPlayer2Mana(message);
+					break;
+				case "addPlayer1Notification":
+					addPlayer1Notification(message);
+					break;
+				case "addPlayer2Notification":
+					addPlayer2Notification(message);
+					break;
+				case "playUnitAnimation":
+					playUnitAnimation(message);
+					break;
+				case "drawCard":
+					drawCard(message);
+					break;
+				case "deleteCard":
+					deleteCard(message);
+					break;
+				case "playEffectAnimation":
+					playEffectAnimation(message);
+					break;
+				case "deleteUnit":
+					deleteUnit(message);
+					break;
+				case "drawProjectile":
+					drawProjectile(message);
+					break;
+				case "gameOver":
+					showGameOverScreen(message.winner);
+					break;
+                default:
+                    return console.log(message);
+            }
+        };
+	}
+	
+	</script>
+     
+    </body>
+</html>

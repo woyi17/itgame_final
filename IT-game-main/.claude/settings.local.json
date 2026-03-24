@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"SC25\\\\|SC18\\\\|SC17\" d:/itgame/IT-game-main/IT-game-main --include=*.json --include=*.scala --include=*.java)",
+      "Bash(grep -r \"summon\\\\|Summon\" d:/itgame/IT-game-main/IT-game-main/app --include=*.java)",
+      "Bash(.sbt compile:*)",
+      "Bash(cmd.exe /c \"sbt.bat compile 2>&1\")",
+      "Bash(powershell.exe -Command \".\\\\sbt.bat compile\")",
+      "Bash(powershell.exe -Command \".\\\\sbt.bat ''''run 9000''''\")",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 9000 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Get-Process -Id $_} | Select-Object Id, ProcessName\")",
+      "Bash(powershell.exe -Command \"netstat -ano | findstr '':9000''\")"
+    ]
+  }
+}
